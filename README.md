@@ -20,11 +20,7 @@ Expected:
 
 {"status":"ok"}
 
-### 4. Open API documentation
-
-http://127.0.0.1:8000/docs
-
-### 5. API endpoint
+### 4. API endpoint
 
 POST /optimize-energy
 
