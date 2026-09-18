@@ -26,4 +26,4 @@ POST /optimize-energy
 
 
 ### 5. Vercel link
-https://gridwise-llm-delta.vercel.app/health
+https://gridwise-llm-delta.vercel.app/
