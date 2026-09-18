@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GridWise LLM — intelligent 24-hour energy scheduling and battery optimization." />
+  <title>GridWise LLM | Energy Optimizer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="GridWise LLM home">
+      <span class="brand-mark">GW</span>
+      <span>
+        <strong>GridWise</strong>
+        <small>LLM ENERGY OPTIMIZER</small>
+      </span>
+    </a>
+    <nav>
+      <a href="#optimizer">Optimizer</a>
+      <a href="#results">Results</a>
+      <a href="#how">How it works</a>
+    </nav>
+    <button class="outline-btn" id="healthBtn">Check API</button>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="dot"></span> Intelligent energy scheduling</div>
+        <h1>Smarter energy decisions,<br /><em>hour by hour.</em></h1>
+        <p>
+          GridWise LLM converts natural-language operator instructions into
+          validated constraints, then finds a cost-aware 24-hour energy plan
+          using solar, grid supply, and battery storage.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="#optimizer">Open Optimizer <span>→</span></a>
+          <button class="text-btn" id="demoBtn">Load demo scenario</button>
+        </div>
+        <div class="trust-row">
+          <span>24-hour planning</span><i></i>
+          <span>Battery-aware</span><i></i>
+          <span>LLM directives</span><i></i>
+          <span>Validated output</span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="mini-top">
+          <span>LIVE OPTIMIZATION</span>
+          <span class="status-pill">READY</span>
+        </div>
+        <div class="energy-ring">
+          <div class="ring-inner">
+            <span id="heroCost">৳ 1,846</span>
+            <small>estimated daily cost</small>
+          </div>
+        </div>
+        <div class="mini-metrics">
+          <div><b id="heroGrid">96.4</b><span>Grid kWh</span></div>
+          <div><b id="heroPeak">7.8</b><span>Peak kWh</span></div>
+          <div><b>24</b><span>Hours</span></div>
+        </div>
+        <div class="spark-bars" id="heroBars"></div>
+      </div>
+    </section>
+
+    <section class="section" id="optimizer">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">01 / INPUT</span>
+          <h2>Optimization workspace</h2>
+        </div>
+        <p>Describe the operating scenario. GridWise handles the translation from instructions to constraints.</p>
+      </div>
+
+      <div class="workspace">
+        <aside class="control-panel">
+          <div class="panel-title">
+            <span>Scenario configuration</span>
+            <span class="tiny-label">24 H</span>
+          </div>
+
+          <label>Scenario ID
+            <input id="scenarioId" value="judge-demo-01" />
+          </label>
+
+          <label>Operator notes
+            <textarea id="notes" rows="5">Reduce solar availability by 20% during hours 12-15.
+Keep at least 4 kWh in the battery during evening hours 18-22.
+Avoid battery charging between hours 18-20.</textarea>
+          </label>
+
+          <div class="subheading">Battery system</div>
+          <div class="two-col">
+            <label>Capacity (kWh)<input id="capacity" type="number" value="12" min="1" step="0.1"></label>
+            <label>Initial energy<input id="initial" type="number" value="7" min="0" step="0.1"></label>
+            <label>Minimum reserve<input id="minimum" type="number" value="2" min="0" step="0.1"></label>
+            <label>Max charge / h<input id="maxCharge" type="number" value="4" min="0" step="0.1"></label>
+            <label>Max discharge / h<input id="maxDischarge" type="number" value="4" min="0" step="0.1"></label>
+          </div>
+
+          <div class="api-box">
+            <span class="api-dot"></span>
+            <div><b>Backend endpoint</b><small id="apiLabel">http://127.0.0.1:8000</small></div>
+            <button id="apiEdit" title="Change API URL">Edit</button>
+          </div>
+
+          <button class="primary-btn full" id="optimizeBtn">Optimize Energy Plan <span>→</span></button>
+          <div class="mode-note"><span>●</span> Demo-ready · connects to FastAPI when available</div>
+        </aside>
+
+        <div class="data-panel">
+          <div class="panel-title">
+            <span>Hourly energy profile</span>
+            <div class="legend"><span><i class="solar"></i> Solar</span><span><i class="demand"></i> Demand</span><span><i class="tariff"></i> Tariff</span></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Hour</th><th>Demand<br><small>kWh</small></th><th>Solar<br><small>kWh</small></th><th>Tariff<br><small>BDT/kWh</small></th></tr></thead>
+              <tbody id="inputRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section results-section" id="results">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">02 / OUTPUT</span>
+          <h2>Validated energy plan</h2>
+        </div>
+        <p id="resultStatus">Run the optimizer to generate a schedule.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <article class="kpi"><span>Total grid energy</span><strong id="totalGrid">—</strong><small>kWh / day</small></article>
+        <article class="kpi accent"><span>Estimated cost</span><strong id="totalCost">—</strong><small>BDT / day</small></article>
+        <article class="kpi"><span>Peak grid draw</span><strong id="peakGrid">—</strong><small>kWh / hour</small></article>
+        <article class="kpi"><span>Scenario</span><strong id="resultScenario">—</strong><small>validated request</small></article>
+      </div>
+
+      <div class="result-grid">
+        <article class="result-card wide">
+          <div class="card-head"><div><span class="section-kicker">ENERGY FLOW</span><h3>24-hour schedule</h3></div><span class="badge">OPTIMIZED</span></div>
+          <div class="chart-wrap"><svg id="energyChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg></div>
+          <div class="chart-labels"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div>
+        </article>
+
+        <article class="result-card">
+          <div class="card-head"><div><span class="section-kicker">AI INTERPRETATION</span><h3>Applied directives</h3></div></div>
+          <div id="directives" class="directive-list"></div>
+        </article>
+
+        <article class="result-card wide">
+          <div class="card-head"><div><span class="section-kicker">SCHEDULE</span><h3>Hourly plan details</h3></div><button class="small-btn" id="exportBtn">Export JSON</button></div>
+          <div class="table-wrap output-wrap">
+            <table>
+              <thead><tr><th>Hour</th><th>Grid</th><th>Solar used</th><th>Battery action</th><th>Battery Δ</th><th>Energy after</th></tr></thead>
+              <tbody id="outputRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-icon">✦</div>
+        <div><span class="section-kicker">PLAN SUMMARY</span><p id="planSummary">The validated plan summary will appear here after optimization.</p></div>
+      </div>
+    </section>
+
+    <section class="section how-section" id="how">
+      <div class="section-heading centered">
+        <span class="section-kicker">03 / METHOD</span>
+        <h2>From natural language to an executable plan</h2>
+      </div>
+      <div class="steps">
+        <article><span>01</span><h3>Interpret</h3><p>LLM-assisted interpretation turns operator notes into structured directives such as solar reduction, reserve requirements and no-charge windows.</p></article>
+        <article><span>02</span><h3>Optimize</h3><p>A constrained linear program balances demand, solar, grid supply and battery movement while minimizing grid energy cost.</p></article>
+        <article><span>03</span><h3>Validate</h3><p>The generated schedule is checked against request constraints before it is returned as the final plan.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>GridWise LLM</strong><span>Intelligent Energy Optimization</span></div>
+    <span>Built for transparent, constraint-aware energy planning.</span>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import Settings
 from .llm import InterpreterError, LLMInterpreter
@@ -18,29 +21,80 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
-interpreter = LLMInterpreter(Settings.from_env())
+
+
+interpreter = LLMInterpreter(
+    Settings.from_env()
+)
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+STATIC_DIR = BASE_DIR / "static"
+
+
+app.mount(
+    "/static",
+    StaticFiles(directory=STATIC_DIR),
+    name="static",
+)
+
+
+@app.get(
+    "/",
+    include_in_schema=False,
+)
+def frontend() -> FileResponse:
+    return FileResponse(
+        STATIC_DIR / "index.html"
+    )
 
 
 @app.exception_handler(RequestValidationError)
 async def request_validation_error(
-    _request: Request, _exc: RequestValidationError
+    _request: Request,
+    _exc: RequestValidationError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=400,
-        content={"error": "invalid_request", "message": "Request JSON failed validation"},
+        content={
+            "error": "invalid_request",
+            "message": "Request JSON failed validation",
+        },
     )
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok"
+    }
 
 
-@app.post("/optimize-energy", response_model=OptimizationResponse)
-def optimize_energy(request: OptimizationRequest) -> OptimizationResponse | JSONResponse:
+@app.post(
+    "/optimize-energy",
+    response_model=OptimizationResponse,
+)
+def optimize_energy(
+    request: OptimizationRequest,
+) -> OptimizationResponse | JSONResponse:
+
     try:
-        directives = interpreter.interpret(request)
-        plan, total_grid, total_cost, peak_grid = optimize_schedule(request, directives)
+
+        directives = interpreter.interpret(
+            request
+        )
+
+        (
+            plan,
+            total_grid,
+            total_cost,
+            peak_grid,
+        ) = optimize_schedule(
+            request,
+            directives,
+        )
+
         validate_plan(
             request,
             directives,
@@ -49,25 +103,36 @@ def optimize_energy(request: OptimizationRequest) -> OptimizationResponse | JSON
             total_cost,
             peak_grid,
         )
+
     except InterpreterError as exc:
+
         return JSONResponse(
             status_code=500,
-            content={"error": "interpretation_failed", "message": str(exc)},
+            content={
+                "error": "interpretation_failed",
+                "message": str(exc),
+            },
         )
+
     except OptimizationError:
+
         return JSONResponse(
             status_code=422,
             content={
                 "error": "infeasible_scenario",
-                "message": "No valid schedule satisfies all scenario constraints",
+                "message":
+                    "No valid schedule satisfies all scenario constraints",
             },
         )
+
     except PlanValidationError:
+
         return JSONResponse(
             status_code=500,
             content={
                 "error": "internal_validation_failed",
-                "message": "The generated schedule failed final validation",
+                "message":
+                    "The generated schedule failed final validation",
             },
         )
 
@@ -79,8 +144,10 @@ def optimize_energy(request: OptimizationRequest) -> OptimizationResponse | JSON
         total_cost_bdt=total_cost,
         peak_grid_kwh=peak_grid,
         plan_summary=(
-            "Applied the validated operator directives, used available solar, and shifted "
-            "battery energy across tariff periods while preserving all reserves, rate limits, "
-            "grid caps, and end-of-day battery neutrality."
+            "Applied the validated operator directives, "
+            "used available solar, and shifted battery "
+            "energy across tariff periods while preserving "
+            "all reserves, rate limits, grid caps, and "
+            "end-of-day battery neutrality."
         ),
     )
