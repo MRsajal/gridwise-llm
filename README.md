@@ -27,3 +27,7 @@ http://127.0.0.1:8000/docs
 ### 5. API endpoint
 
 POST /optimize-energy
+
+
+### 5. Vercel link
+https://gridwise-llm-delta.vercel.app/health
